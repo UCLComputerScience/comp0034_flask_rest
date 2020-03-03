@@ -13,7 +13,7 @@ bp_main = Blueprint('main', __name__)
 def index(name=""):
     if current_user.is_authenticated:
         name = current_user.name
-    return render_template("main/index.html", name=name)
+    return render_template("index.html", name=name)
 
 
 @bp_main.route('/courses', methods=['GET'])
