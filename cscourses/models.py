@@ -53,6 +53,7 @@ class Teacher(User):
 
 
 class Course(db.Model):
+    __tablename__ = 'course'
     id = db.Column(db.Integer, primary_key=True)
     course_code = db.Column(db.Integer, nullable=False)
     name = db.Column(db.Text, nullable=False)
@@ -62,8 +63,16 @@ class Course(db.Model):
     def __repr__(self):
         return '<Course {}>'.format(self.course_code, self.name)
 
+    @property
+    def serialize(self):
+        return {'id': self.id,
+                'code': self.course_code,
+                'name': self.name,
+                'teacher_id': self.teacher_id}
+
 
 class Grade(db.Model):
+    __tablename__ = 'grade'
     student_id = db.Column(db.Integer, db.ForeignKey(Student.id), nullable=False, primary_key=True)
     course_id = db.Column(db.Integer, db.ForeignKey(Course.id), nullable=False, primary_key=True)
     grade = db.Column(db.Text)
