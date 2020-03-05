@@ -65,8 +65,8 @@ class Course(db.Model):
 
     @property
     def serialize(self):
-        return {'id': self.id,
-                'code': self.course_code,
+        return {'course_id': self.id,
+                'course_code': self.course_code,
                 'name': self.name,
                 'teacher_id': self.teacher_id}
 

@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Courses (from API{% endblock %}
+{% block content %}
+    {% if courses | length %}
+        <table class="table">
+            <thead class="thead-dark">
+            <tr>
+                <th scope="col">Course code</th>
+                <th scope="col">Title</th>
+            </tr>
+            </thead>
+            <tbody>
+            {# Note: the following syntax is for a nested dictionary #}
+            {% for course in courses['courses'] %}
+                <tr>
+                    <td>{{ course.course_code }}</td>
+                    <td>{{ course.name }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No courses found</p>
+    {% endif %}
+{% endblock %}

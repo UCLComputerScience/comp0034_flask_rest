@@ -1,0 +1,7 @@
+{% extends 'base.html' %}
+{% block content %}
+    <h3>Top Stories</h3>
+    {% for item in stories %}
+        <p><a href="{{ item.url|e }}">{{ item.title|e }}</a></p>
+    {% endfor %}
+{% endblock %}
