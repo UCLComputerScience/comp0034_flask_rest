@@ -274,8 +274,8 @@ return render_template('courses_api_client.html', courses=courses)
 
 
 # Exercise 3: Create a page that uses data from the Hacker News API
-The page will display the titles of the top 50 stories from the Hacker News API.
-Top stories URI is: https://hacker-news.firebaseio.com/v0/topstories.json. No authentication required.
+The page will display the titles of the top 10 stories from the Hacker News API top 50 stories URI. 
+Top 50 stories URI is: https://hacker-news.firebaseio.com/v0/topstories.json (no authentication required).
 
 1. Add a `news.html` template (already created).
 
