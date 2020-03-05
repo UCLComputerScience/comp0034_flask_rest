@@ -164,19 +164,18 @@ def delete_course(course_id):
         def create_user():
             username = request.args.get('username')
             password = request.args.get('password')
-            headers = {"Content-Type": "application/json"}
             if username is None or password is None:
                 json = jsonify({'message': 'Missing username or password'})
-                return make_response(json, 400, headers)
+                return make_response(json, 400)
             if User.query.filter_by(name=username).first() is not None:
                 json = jsonify({'message': 'Duplicate username'})
-                return make_response(json, 400, headers)
+                return make_response(json, 400)
             user = User(name=username)
             user.set_password(password)
             db.session.add(user)
             db.session.commit()
             json = jsonify({'user_id': '{}'.format(user.id), 'name': '{}'.format(user.name) })
-            return make_response(json, 201, headers)
+            return make_response(json, 201)
         ```
 
     2. Add Flask-HTTPAuth authentication to require users to provide username and password to access the API e.g.
