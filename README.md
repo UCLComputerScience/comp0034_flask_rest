@@ -31,118 +31,119 @@ GET | http://[hostname]/api/courses/[course_id] | Retrieve a course
 POST | http://[hostname]/api/courses | Create a new course
 PUT | http://[hostname]/api/courses/[course_id] | Update an existing course
 
-    ```python
+```python
+
+from flask import Blueprint, jsonify, request, make_response
+from flask_httpauth import HTTPBasicAuth
+
+from cscourses import db
+from cscourses.models import Course, User
+
+bp_api = Blueprint('api', __name__, url_prefix='/api')
+
+
+@bp_api.after_request
+def add_header(response):
+    response.headers['Content-Type'] = 'application/json'
+    return response
+
+
+@bp_api.errorhandler(404)
+def not_found(error):
+    error = {
+        'status': 404,
+        'message': 'Not Found: ' + request.url,
+    }
+    response = jsonify(error)
+    return make_response(response, 404)
+
+
+@bp_api.errorhandler(401)
+def not_authorised():
+    error = {
+        'status': 401,
+        'message': 'You must provide username and password to access this resource',
+    }
+    response = jsonify(error)
+    return make_response(response, 404)
+
+
+@http_auth.verify_password
+def verify_password(username, password):
+    user = User.query.filter_by(name=username).first()
+    if not user or not user.check_password(password):
+        return False
+    return True
+
+
+@bp_api.route('/courses', methods=['GET'])
+@http_auth.login_required()
+def read_courses():
+    courses = Course.query.all()
+    json = jsonify(courses=[c.serialize for c in courses])
+    return make_response(json, 200)
+
+
+@bp_api.route('/courses/<int:course_id>', methods=['GET'])
+@http_auth.login_required
+def read_course(course_id):
+    course = Course.query.filter_by(id=course_id).first_or_404()
+    json = jsonify(course=course.serialize)
+    return make_response(json, 200)
+
+
+@bp_api.route('/courses', methods=['POST'])
+@http_auth.login_required
+def create_course():
+    '''To create a new course all fields must be provided'''
+    # request.args.get() will return None if the arg is not present in the request
+    course_code = request.args.get('course_code', type=str)
+    name = request.args.get('name', type=str)
+    teacher_id = request.args.get('teacher_id', type=int)
+    # The following line checks if any of the variables are None
+    if None in (course_code, name, teacher_id):
+        headers = {"Content-Type": "application/json"}
+        json = jsonify({'message': 'Please provide: course_code, name, teacher_id'})
+        return make_response(json, 400, headers)
+    course = Course(course_code=course_code, name=name, teacher_id=teacher_id)
+    db.session.add(course)
+    db.session.commit()
+    json = jsonify(Course=course.serialize)
+    return make_response(json, 201)
+
+
+@bp_api.route('/courses/<int:course_id>', methods=['PUT'])
+@http_auth.login_required
+def update_course(course_id):
+    # Find the course by its ID
+    course = db.session.query(Course).filter_by(id=course_id).first_or_404()
+    # Create variables using the values posted in the request
+    course_name = request.args.get('course_name')
+    teacher_id = request.args.get('teacher_id')
+    course_code = request.args.get('course_code')
+    # If any of the variables have a provided value then update the database
+    if course_name is not None:
+        course.name = course_name
+    if teacher_id is not None:
+        course.teacher_id = teacher_id
+    if course_code is not None:
+        course.course_code = course_code
+    db.session.commit()
+    json = jsonify({'message': 'Updated Course with id {}'.format(course.id)})
+    return make_response(json, 200)
+
+
+@bp_api.route('/courses/<int:course_id>', methods=['DELETE'])
+@http_auth.login_required
+def delete_course(course_id):
+    course = Course.query.filter_by(id=course_id).one()
+    db.session.delete(course)
+    db.session.commit()
+    json = jsonify({'message': 'Removed Course with id {}'.format(course_id)})
+    return make_response(json, 200)
     
-    from flask import Blueprint, jsonify, request, make_response
-    from flask_httpauth import HTTPBasicAuth
-    
-    from cscourses import db
-    from cscourses.models import Course, User
-    
-    bp_api = Blueprint('api', __name__, url_prefix='/api')
-    
-    
-    @bp_api.after_request
-    def add_header(response):
-        response.headers['Content-Type'] = 'application/json'
-        return response
-    
-    
-    @bp_api.errorhandler(404)
-    def not_found(error):
-        error = {
-            'status': 404,
-            'message': 'Not Found: ' + request.url,
-        }
-        response = jsonify(error)
-        return make_response(response, 404)
-    
-    
-    @bp_api.errorhandler(401)
-    def not_authorised():
-        error = {
-            'status': 401,
-            'message': 'You must provide username and password to access this resource',
-        }
-        response = jsonify(error)
-        return make_response(response, 404)
-    
-    
-    @http_auth.verify_password
-    def verify_password(username, password):
-        user = User.query.filter_by(name=username).first()
-        if not user or not user.check_password(password):
-            return False
-        return True
-    
-    
-    @bp_api.route('/courses', methods=['GET'])
-    @http_auth.login_required()
-    def read_courses():
-        courses = Course.query.all()
-        json = jsonify(courses=[c.serialize for c in courses])
-        return make_response(json, 200)
-    
-    
-    @bp_api.route('/courses/<int:course_id>', methods=['GET'])
-    @http_auth.login_required
-    def read_course(course_id):
-        course = Course.query.filter_by(id=course_id).first_or_404()
-        json = jsonify(course=course.serialize)
-        return make_response(json, 200)
-    
-    
-    @bp_api.route('/courses', methods=['POST'])
-    @http_auth.login_required
-    def create_course():
-        '''To create a new course all fields must be provided'''
-        # request.args.get() will return None if the arg is not present in the request
-        course_code = request.args.get('course_code', type=str)
-        name = request.args.get('name', type=str)
-        teacher_id = request.args.get('teacher_id', type=int)
-        # The following line checks if any of the variables are None
-        if None in (course_code, name, teacher_id):
-            headers = {"Content-Type": "application/json"}
-            json = jsonify({'message': 'Please provide: course_code, name, teacher_id'})
-            return make_response(json, 400, headers)
-        course = Course(course_code=course_code, name=name, teacher_id=teacher_id)
-        db.session.add(course)
-        db.session.commit()
-        json = jsonify(Course=course.serialize)
-        return make_response(json, 201)
-    
-    
-    @bp_api.route('/courses/<int:course_id>', methods=['PUT'])
-    @http_auth.login_required
-    def update_course(course_id):
-        # Find the course by its ID
-        course = db.session.query(Course).filter_by(id=course_id).first_or_404()
-        # Create variables using the values posted in the request
-        course_name = request.args.get('course_name')
-        teacher_id = request.args.get('teacher_id')
-        course_code = request.args.get('course_code')
-        # If any of the variables have a provided value then update the database
-        if course_name is not None:
-            course.name = course_name
-        if teacher_id is not None:
-            course.teacher_id = teacher_id
-        if course_code is not None:
-            course.course_code = course_code
-        db.session.commit()
-        json = jsonify({'message': 'Updated Course with id {}'.format(course.id)})
-        return make_response(json, 200)
-    
-    
-    @bp_api.route('/courses/<int:course_id>', methods=['DELETE'])
-    @http_auth.login_required
-    def delete_course(course_id):
-        course = Course.query.filter_by(id=course_id).one()
-        db.session.delete(course)
-        db.session.commit()
-        json = jsonify({'message': 'Removed Course with id {}'.format(course_id)})
-        return make_response(json, 200)
-    
-    ```
+```
+
 
 6. Test the API routes using Postman
     1. Download and install postman from https://www.getpostman.com/downloads/
@@ -201,7 +202,7 @@ PUT | http://[hostname]/api/courses/[course_id] | Update an existing course
             return True
         ```
     
-    4. Update the existing routes to require authentication to access them:
+    4. Update the existing routes to require authentication to access them using `login_required`:
         ```python
        @bp_api.route('/courses', methods=['GET'])
        @http_auth.login_required
