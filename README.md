@@ -68,16 +68,7 @@ def not_authorised():
     return make_response(response, 404)
 
 
-@http_auth.verify_password
-def verify_password(username, password):
-    user = User.query.filter_by(name=username).first()
-    if not user or not user.check_password(password):
-        return False
-    return True
-
-
 @bp_api.route('/courses', methods=['GET'])
-@http_auth.login_required()
 def read_courses():
     courses = Course.query.all()
     json = jsonify(courses=[c.serialize for c in courses])
@@ -85,7 +76,6 @@ def read_courses():
 
 
 @bp_api.route('/courses/<int:course_id>', methods=['GET'])
-@http_auth.login_required
 def read_course(course_id):
     course = Course.query.filter_by(id=course_id).first_or_404()
     json = jsonify(course=course.serialize)
@@ -93,7 +83,6 @@ def read_course(course_id):
 
 
 @bp_api.route('/courses', methods=['POST'])
-@http_auth.login_required
 def create_course():
     '''To create a new course all fields must be provided'''
     # request.args.get() will return None if the arg is not present in the request
@@ -113,7 +102,6 @@ def create_course():
 
 
 @bp_api.route('/courses/<int:course_id>', methods=['PUT'])
-@http_auth.login_required
 def update_course(course_id):
     # Find the course by its ID
     course = db.session.query(Course).filter_by(id=course_id).first_or_404()
@@ -134,7 +122,6 @@ def update_course(course_id):
 
 
 @bp_api.route('/courses/<int:course_id>', methods=['DELETE'])
-@http_auth.login_required
 def delete_course(course_id):
     course = Course.query.filter_by(id=course_id).one()
     db.session.delete(course)
